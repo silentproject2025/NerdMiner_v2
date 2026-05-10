@@ -48,6 +48,7 @@ void sanzxcam_Init(void)
   else {
     Serial.println("[SANZXCAM] Font loaded successfully");
   }
+  tft.fillScreen(TFT_BLUE);
   Serial.println("[SANZXCAM] Display Initialized successfully");
 }
 
