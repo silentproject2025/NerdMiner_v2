@@ -11,7 +11,7 @@
 #include "OpenFontRender.h"
 #include "rotation.h"
 
-#define WIDTH 340
+#define WIDTH 320
 #define HEIGHT 170
 
 OpenFontRender render;
@@ -24,6 +24,11 @@ void tDisplay_Init(void)
 #ifdef PIN_ENABLE5V
     pinMode(PIN_ENABLE5V, OUTPUT);
     digitalWrite(PIN_ENABLE5V, HIGH);
+#endif
+
+#ifdef TFT_BL
+    pinMode(TFT_BL, OUTPUT);
+    digitalWrite(TFT_BL, HIGH);
 #endif
   
   tft.init();
