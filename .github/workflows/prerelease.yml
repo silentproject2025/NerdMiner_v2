@@ -13,6 +13,8 @@ jobs:
       version: ${{ steps.version_step.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/cache@v4
         with:
           path: |
@@ -31,19 +33,13 @@ jobs:
           echo "=== All .bin files found ==="
           find . -name "*.bin" -type f
           echo "=== Directory structure ==="
-          ls -la
-          echo "=== .pio/build contents ==="
-          find .pio/build -name "*.bin" -type f 2>/dev/null || echo "No .pio/build files"
-          echo "=== firmware directory ==="
-          ls -la firmware/ 2>/dev/null || echo "No firmware directory"
-          find firmware -name "*.bin" -type f 2>/dev/null || echo "No firmware .bin files"
-          echo "=== Script check ==="
-          ls -la post_build_merge.py
+          ls -R
       - name: Archive firmware files
         uses: actions/upload-artifact@v4
         with:
           name: firmware-files-${{ github.sha }}
-          path: firmware/
+          path: |
+            firmware/**/*.bin
           if-no-files-found: error
       - name: Get version
         id: version_step
@@ -55,12 +51,12 @@ jobs:
       contents: write
       discussions: write
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/prerelease'
+    if: github.ref == 'refs/heads/prerelease' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download firmware files
         uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/
+          path: ${{ github.workspace }}/firmware-download/
           name: firmware-files-${{ github.sha }}
       - name: Debug - Check downloaded files
         run: |
@@ -69,15 +65,14 @@ jobs:
           ls -la
           echo "=== All .bin files after download ==="
           find . -name "*.bin" -type f
-          echo "=== firmware directory after download ==="
-          find firmware -type f 2>/dev/null || echo "No firmware directory found"
       - name: Prerelease
         uses: softprops/action-gh-release@v2
         with:
           name: nerdminer-prerelease-${{ needs.build.outputs.version }}
-          tag_name: nerdminer-prerelease-${{ needs.build.outputs.version }}
+          tag_name: nerdminer-prerelease-${{ needs.build.outputs.version }}-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           prerelease: true
           fail_on_unmatched_files: true
-          files: ${{ github.workspace }}/**/*.bin
+          files: |
+            firmware-download/**/*.bin
