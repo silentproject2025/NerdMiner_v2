@@ -12,6 +12,7 @@ extra_scripts =
 
 import os
 import subprocess
+import shutil
 from pathlib import Path
 
 Import("env")
@@ -128,7 +129,7 @@ def create_merged_firmware(source, target, env):
     env_name = env.subst("$PIOENV")
     version = get_firmware_version()
     
-    print(f"\n🔨 Building firmware files for {env_name}...")
+    print(f"\n🔨 Building merged firmware files for {env_name}...")
     
     # File paths in build directory
     bootloader_file = build_dir / "bootloader.bin"
@@ -145,21 +146,28 @@ def create_merged_firmware(source, target, env):
     esp_type = detect_esp32_type(bootloader_file) if bootloader_file.exists() else 'ESP32'
     addresses = get_memory_layout(esp_type)
     
+    # If boot_app0 is needed but missing from build dir, try to find it in PIO packages
+    if 'boot_app0' in addresses and not boot_app0_file.exists():
+        packages_dir = Path(os.path.expanduser("~/.platformio/packages"))
+        found_app0 = list(packages_dir.glob("**/tools/partitions/boot_app0.bin"))
+        if found_app0:
+            shutil.copy2(found_app0[0], boot_app0_file)
+            print(f"   ℹ️ Found boot_app0.bin in PlatformIO packages")
+
     print(f"📱 Detected: {esp_type} (bootloader at 0x{addresses['bootloader']:04X})")
     
     # Output directory with version subfolder
     version_dir = project_dir / "firmware" / version
     version_dir.mkdir(parents=True, exist_ok=True)
     
-    # Output filenames (simplified names)
+    # Output filenames
     factory_file = version_dir / f"{env_name}_factory.bin"
     update_file = version_dir / f"{env_name}_firmware.bin"
     
     # 1. Create update file (just copy firmware.bin)
     try:
-        import shutil
         shutil.copy2(firmware_file, update_file)
-        print(f"✅ Firmware: {update_file.name}")
+        print(f"✅ Update File (Flash at 0x10000): {update_file.name}")
     except Exception as e:
         print(f"❌ Error creating firmware file: {e}")
         return
@@ -189,7 +197,7 @@ def create_merged_firmware(source, target, env):
                 with open(file_path, 'rb') as f:
                     data = f.read()
                 
-                print(f"   📄 {file_type} at 0x{address:06X}: {len(data)} bytes")
+                print(f"   📄 {file_type:10} at 0x{address:06X}: {len(data):8} bytes")
                 
                 if address + len(data) <= merged_size:
                     merged_data[address:address+len(data)] = data
@@ -209,7 +217,7 @@ def create_merged_firmware(source, target, env):
         with open(factory_file, 'wb') as f:
             f.write(merged_data[:actual_end])
         
-        print(f"✅ Factory: {factory_file.name} ({actual_end} bytes)")
+        print(f"✅ Factory File (Flash at 0x00000): {factory_file.name} ({actual_end} bytes)")
         
     except Exception as e:
         print(f"❌ Error creating factory file: {e}")
