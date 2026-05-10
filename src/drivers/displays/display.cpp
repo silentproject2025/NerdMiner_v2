@@ -64,6 +64,10 @@ DisplayDriver *currentDisplayDriver = &t_hmiDisplayDriver;
 DisplayDriver *currentDisplayDriver = &sp_kcDisplayDriver;
 #endif
 
+#ifdef SANZXCAM_DISPLAY
+DisplayDriver *currentDisplayDriver = &sanzxcamDisplayDriver;
+#endif
+
 
 // Initialize the display
 void initDisplay()
