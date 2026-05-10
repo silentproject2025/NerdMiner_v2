@@ -23,10 +23,13 @@ extern monitor_data mMonitor;
 void sanzx_Init(void)
 {
   Serial.println("[SANZX] Initializing Display...");
+  // Backlight management - moved to start to ensure screen turns on immediately
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
+  Serial.println("[SANZX] Backlight ON");
 
   tft.init();
+  Serial.println("[SANZX] TFT init done");
   tft.setRotation(1); // Set to landscape (320x170)
   tft.setSwapBytes(true);
 
@@ -39,8 +42,11 @@ void sanzx_Init(void)
   {
     Serial.println("[SANZX] Initialise error: Font not loaded");
   }
+  else {
+    Serial.println("[SANZX] Font loaded successfully");
+  }
 
-  tft.fillScreen(TFT_BLACK);
+  tft.fillScreen(TFT_BLUE);
   Serial.println("[SANZX] Display Initialized successfully");
 }
 
