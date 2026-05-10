@@ -24,6 +24,12 @@ bool hasChangedScreen = true;
 
 void sanzxcam_Init(void)
 {
+  Serial.println("[SANZXCAM] Initializing Display...");
+  // Backlight management - moved to start to ensure screen turns on immediately
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, HIGH);
+  Serial.println("[SANZXCAM] Backlight ON");
+
   tft.init();
   tft.setRotation(1);
   tft.setSwapBytes(true);                 // Swap the colour byte order when rendering
@@ -34,15 +40,15 @@ void sanzxcam_Init(void)
   render.setDrawer(background);
   render.setLineSpaceRatio(0.9);
 
+  // Load the font and check it can be read OK
   if (render.loadFont(DigitalNumbers, sizeof(DigitalNumbers)))
   {
-    Serial.println("Initialise error");
-    return;
+    Serial.println("[SANZXCAM] Initialise error: Font not loaded");
   }
-
-  // Backlight management
-  pinMode(TFT_BL, OUTPUT);
-  digitalWrite(TFT_BL, HIGH);
+  else {
+    Serial.println("[SANZXCAM] Font loaded successfully");
+  }
+  Serial.println("[SANZXCAM] Display Initialized successfully");
 }
 
 void sanzxcam_AlternateScreenState(void)
@@ -50,6 +56,7 @@ void sanzxcam_AlternateScreenState(void)
   int screen_state = digitalRead(TFT_BL);
   Serial.println("Switching display state");
   digitalWrite(TFT_BL, !screen_state);
+  hasChangedScreen = true; // Trigger full refresh on wake
 }
 
 void sanzxcam_AlternateRotation(void)
