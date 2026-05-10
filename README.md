@@ -89,7 +89,7 @@ If you want you can compile the entire project using Arduino, PlatformIO or Expr
 
 ### Update firmware
 
-Update NerdMiner firmware following same flashing steps but only using the file 0x10000_firmware.bin.
+Update NerdMiner firmware using the `_firmware.bin` file (Flash at 0x10000). For first-time installation, use the `_factory.bin` file (Flash at 0x00000).
 
 #### Build troubleshooting
 
