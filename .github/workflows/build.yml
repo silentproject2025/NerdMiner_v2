@@ -1,77 +1,94 @@
-name: Nerdminer
+name: NerdMiner CI/CD
+
 on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - prerelease
 
 jobs:
   build:
+    name: Build Firmware
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version_step.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/cache@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
             ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
-      - uses: actions/setup-python@v4
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      - name: Install PlatformIO Core
+          python-version: '3.11'
+
+      - name: Install PlatformIO
         run: pip install --upgrade platformio
-      - name: Build PlatformIO Project
+
+      - name: Build All Environments
         run: pio run
-      - name: Debug - Check generated files
+
+      - name: Get Version
+        id: version_step
         run: |
-          echo "=== All .bin files found ==="
-          find . -name "*.bin" -type f
-          echo "=== Directory structure ==="
-          ls -R
-      - name: Archive firmware files
+          VERSION=$(grep "CURRENT_VERSION" src/version.h | awk -F\" '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Archive Firmware
         uses: actions/upload-artifact@v4
         with:
-          name: firmware-files-${{ github.sha }}
-          path: |
-            firmware/**/*.bin
+          name: firmware-${{ github.sha }}
+          path: firmware/
           if-no-files-found: error
-      - name: Get version
-        id: version_step
-        run: echo "version=`cat src/version.h | grep CURRENT_VERSION | awk -F\\" '{print $2}'`" >> $GITHUB_OUTPUT
 
-  prerelease:
+  publish:
+    name: Publish Release
     needs: build
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/prerelease' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       discussions: write
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/prerelease' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Download firmware files
+      - name: Download Firmware
         uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/firmware-download/
-          name: firmware-files-${{ github.sha }}
-      - name: Debug - Check downloaded files
+          name: firmware-${{ github.sha }}
+          path: firmware-dist
+
+      - name: Determine Release Metadata
+        id: meta
         run: |
-          echo "=== Working directory ==="
-          pwd
-          ls -la
-          echo "=== All .bin files after download ==="
-          find . -name "*.bin" -type f
-      - name: Prerelease
+          VERSION="${{ needs.build.outputs.version }}"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "tag=$VERSION" >> $GITHUB_OUTPUT
+            echo "title=NerdMiner $VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "tag=$VERSION-pre-${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "title=NerdMiner $VERSION (Pre-release)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: nerdminer-prerelease-${{ needs.build.outputs.version }}
-          tag_name: nerdminer-prerelease-${{ needs.build.outputs.version }}-${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
+          name: ${{ steps.meta.outputs.title }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          files: firmware-dist/**/*.bin
           generate_release_notes: true
-          prerelease: true
-          fail_on_unmatched_files: true
-          files: |
-            firmware-download/**/*.bin
+          make_latest: ${{ github.ref == 'refs/heads/main' }}

@@ -89,11 +89,12 @@ def get_memory_layout(esp_type):
         }
 
 def get_firmware_version():
-    """Get firmware version from git"""
+    """Get firmware version from git or version.h"""
     try:
         result = subprocess.run(["git", "describe", "--tags", "--dirty"], 
                               stdout=subprocess.PIPE, text=True, 
-                              cwd=env.subst("$PROJECT_DIR"))
+                              cwd=env.subst("$PROJECT_DIR"),
+                              stderr=subprocess.DEVNULL)
         if result.returncode == 0:
             version = result.stdout.strip()
             # Clean up version string
@@ -101,6 +102,21 @@ def get_firmware_version():
             return version
     except:
         pass
+
+    # Fallback to src/version.h
+    try:
+        version_h = Path(env.subst("$PROJECT_DIR")) / "src" / "version.h"
+        if version_h.exists():
+            with open(version_h, 'r') as f:
+                for line in f:
+                    if "CURRENT_VERSION" in line:
+                        import re
+                        match = re.search(r'"([^"]+)"', line)
+                        if match:
+                            return match.group(1)
+    except:
+        pass
+
     return "dev"
 
 def create_merged_firmware(source, target, env):
@@ -150,8 +166,8 @@ def create_merged_firmware(source, target, env):
     
     # 2. Create factory file (merged)
     try:
-        # Create merged binary - 4MB filled with 0xFF
-        merged_size = 0x400000  # 4MB
+        # Create merged binary - 16MB filled with 0xFF
+        merged_size = 0x1000000  # 16MB
         merged_data = bytearray([0xFF] * merged_size)
         max_address = 0
         
