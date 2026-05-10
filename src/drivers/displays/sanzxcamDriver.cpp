@@ -28,19 +28,24 @@ void sanzxcam_Init(void)
   // Backlight management - moved to start to ensure screen turns on immediately
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
-  Serial.println("[SANZXCAM] Backlight ON");
+  Serial.println("[SANZXCAM] Backlight ON (GPIO 48)");
 
+  Serial.println("[SANZXCAM] Calling tft.init()...");
   tft.init();
   tft.setRotation(1);
   tft.setSwapBytes(true);                 // Swap the colour byte order when rendering
+  Serial.println("[SANZXCAM] tft.init() done");
 
   // Background Sprite for the main 320x170 area
+  Serial.println("[SANZXCAM] Creating Sprite...");
   background.createSprite(320, 170);
   background.setSwapBytes(true);
   render.setDrawer(background);
   render.setLineSpaceRatio(0.9);
+  Serial.println("[SANZXCAM] Sprite created");
 
   // Load the font and check it can be read OK
+  Serial.println("[SANZXCAM] Loading Font...");
   if (render.loadFont(DigitalNumbers, sizeof(DigitalNumbers)))
   {
     Serial.println("[SANZXCAM] Initialise error: Font not loaded");
@@ -48,6 +53,11 @@ void sanzxcam_Init(void)
   else {
     Serial.println("[SANZXCAM] Font loaded successfully");
   }
+
+  // Draw a test pattern to verify SPI
+  Serial.println("[SANZXCAM] Drawing test pattern...");
+  tft.fillScreen(TFT_BLUE);
+  tft.drawString("ST7789 Test", 20, 20, 2);
   Serial.println("[SANZXCAM] Display Initialized successfully");
 }
 
