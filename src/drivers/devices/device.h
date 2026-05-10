@@ -51,6 +51,8 @@
 #include "waveshareS3Geek.h"
 #elif defined(NERDMINER_T_HMI)
 #include "lilygoT_HMI.h"
+#elif defined(SANZX)
+#include "sanzx.h"
 #elif defined(SANZXCAM)
 #include "sanzxcam.h"
 #elif defined(SPOTPEAR)

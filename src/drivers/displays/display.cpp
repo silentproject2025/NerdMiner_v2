@@ -64,6 +64,10 @@ DisplayDriver *currentDisplayDriver = &t_hmiDisplayDriver;
 DisplayDriver *currentDisplayDriver = &sp_kcDisplayDriver;
 #endif
 
+#ifdef SANZX_DISPLAY
+DisplayDriver *currentDisplayDriver = &sanzxDisplayDriver;
+#endif
+
 #ifdef SANZXCAM_DISPLAY
 DisplayDriver *currentDisplayDriver = &sanzxcamDisplayDriver;
 #endif
