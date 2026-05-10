@@ -1,0 +1,65 @@
+<<<<<<< SEARCH
+void sanzxcam_Init(void)
+{
+  tft.init();
+  tft.setRotation(1);
+  tft.setSwapBytes(true);                 // Swap the colour byte order when rendering
+
+  // Background Sprite for the main 320x170 area
+  background.createSprite(320, 170);
+  background.setSwapBytes(true);
+  render.setDrawer(background);
+  render.setLineSpaceRatio(0.9);
+
+  if (render.loadFont(DigitalNumbers, sizeof(DigitalNumbers)))
+  {
+    Serial.println("Initialise error");
+    return;
+  }
+
+  // Backlight management
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, HIGH);
+}
+
+void sanzxcam_AlternateScreenState(void)
+{
+  int screen_state = digitalRead(TFT_BL);
+  Serial.println("Switching display state");
+  digitalWrite(TFT_BL, !screen_state);
+}
+=======
+void sanzxcam_Init(void)
+{
+  Serial.println("[SANZXCAM] Initializing Display...");
+  // Backlight management - moved to start to ensure screen turns on immediately
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, HIGH);
+  Serial.println("[SANZXCAM] Backlight ON");
+
+  tft.init();
+  tft.setRotation(1);
+  tft.setSwapBytes(true);                 // Swap the colour byte order when rendering
+
+  // Background Sprite for the main 320x170 area
+  background.createSprite(320, 170);
+  background.setSwapBytes(true);
+  render.setDrawer(background);
+  render.setLineSpaceRatio(0.9);
+
+  if (render.loadFont(DigitalNumbers, sizeof(DigitalNumbers)))
+  {
+    Serial.println("[SANZXCAM] Initialise error: Font not loaded");
+    return;
+  }
+  Serial.println("[SANZXCAM] Display Initialized successfully");
+}
+
+void sanzxcam_AlternateScreenState(void)
+{
+  int screen_state = digitalRead(TFT_BL);
+  Serial.println("Switching display state");
+  digitalWrite(TFT_BL, !screen_state);
+  hasChangedScreen = true; // Trigger full refresh on wake
+}
+>>>>>>> REPLACE
