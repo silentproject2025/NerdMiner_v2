@@ -6,13 +6,34 @@ on:
     branches:
       - main
       - prerelease
+    paths-ignore:
+      - '**.md'
+      - 'images/**'
+      - '3d_files/**'
 
 jobs:
-  build:
-    name: Build Firmware
+  setup:
+    name: Prepare Environments
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version_step.outputs.version }}
+      envs: ${{ steps.get_envs.outputs.envs }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: get_envs
+        run: |
+          # Extract environments from platformio.ini
+          ENVS=$(grep -oP '\[env:\K[^\]]+' platformio.ini | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "envs=$ENVS" >> $GITHUB_OUTPUT
+          echo "Found environments: $ENVS"
+
+  build:
+    name: Build ${{ matrix.env }}
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ${{ fromJson(needs.setup.outputs.envs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,9 +46,9 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.platformio/.cache
-          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          key: ${{ runner.os }}-pio-${{ matrix.env }}-${{ hashFiles('**/platformio.ini') }}
           restore-keys: |
-            ${{ runner.os }}-pio-
+            ${{ runner.os }}-pio-${{ matrix.env }}-
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -37,42 +58,51 @@ jobs:
       - name: Install PlatformIO
         run: pip install --upgrade platformio
 
-      - name: Build All Environments
-        run: pio run
+      - name: Build Environment
+        run: pio run -e ${{ matrix.env }}
+
+      - name: Archive Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.env }}
+          path: firmware/
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: [build, setup]
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/prerelease' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-firmwares
+          pattern: firmware-*
+          merge-multiple: true
 
       - name: Get Version
         id: version_step
         run: |
           VERSION=$(grep "CURRENT_VERSION" src/version.h | awk -F\" '{print $2}')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Detected version: $VERSION"
 
-      - name: Archive Firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-${{ github.sha }}
-          path: firmware/
-          if-no-files-found: error
-
-  publish:
-    name: Publish Release
-    needs: build
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/prerelease' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      discussions: write
-    steps:
-      - name: Download Firmware
-        uses: actions/download-artifact@v4
-        with:
-          name: firmware-${{ github.sha }}
-          path: firmware-dist
+      - name: Prepare Release Files
+        run: |
+          mkdir -p release-dist
+          # Flatten directory structure if needed and organize
+          find all-firmwares -name "*.bin" -exec cp {} release-dist/ \;
+          ls -R release-dist/
 
       - name: Determine Release Metadata
         id: meta
         run: |
-          VERSION="${{ needs.build.outputs.version }}"
+          VERSION="${{ steps.version_step.outputs.version }}"
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "prerelease=false" >> $GITHUB_OUTPUT
             echo "tag=$VERSION" >> $GITHUB_OUTPUT
@@ -83,12 +113,12 @@ jobs:
             echo "title=NerdMiner $VERSION (Pre-release)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create GitHub Release
+      - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.meta.outputs.title }}
           tag_name: ${{ steps.meta.outputs.tag }}
           prerelease: ${{ steps.meta.outputs.prerelease }}
-          files: firmware-dist/**/*.bin
+          files: release-dist/*.bin
           generate_release_notes: true
           make_latest: ${{ github.ref == 'refs/heads/main' }}
