@@ -1,5 +1,6 @@
 name: Nerdminer
 on:
+  workflow_dispatch:
   push:
     branches:
       - prerelease

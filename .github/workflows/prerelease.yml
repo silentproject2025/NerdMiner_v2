@@ -1,6 +1,7 @@
 name: Nerdminer Pre-Release
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - prerelease
@@ -80,4 +81,3 @@ jobs:
           prerelease: true
           fail_on_unmatched_files: true
           files: ${{ github.workspace }}/**/*.bin
-
