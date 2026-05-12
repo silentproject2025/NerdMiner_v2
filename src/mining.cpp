@@ -20,8 +20,8 @@
 #include "i2c_master.h"
 
 //10 Jobs per second
-#define NONCE_PER_JOB_SW 4096
-#define NONCE_PER_JOB_HW 16*1024
+#define NONCE_PER_JOB_SW 8192
+#define NONCE_PER_JOB_HW 32*1024
 
 //#define I2C_SLAVE
 
@@ -471,7 +471,7 @@ void runStratumWorker(void *name) {
     #ifdef I2C_SLAVE
     if (i2c_slave_vector.empty() || job_pool == 0xFFFFFFFF)
     {
-      vTaskDelay(50 / portTICK_PERIOD_MS); //Small delay
+      vTaskDelay(200 / portTICK_PERIOD_MS); //Small delay
     } else
     {
       uint32_t time_start = millis();
@@ -505,7 +505,7 @@ void runStratumWorker(void *name) {
         vTaskDelay(40 / portTICK_PERIOD_MS);
     }
     #else
-    vTaskDelay(50 / portTICK_PERIOD_MS); //Small delay
+    vTaskDelay(200 / portTICK_PERIOD_MS); //Small delay
     #endif
 
     
@@ -1270,7 +1270,7 @@ void runMonitor(void *name)
     animateCurrentScreen(frame);
     doLedStuff(frame);
 
-    vTaskDelay(DELAY / portTICK_PERIOD_MS);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
     frame++;
   }
 }

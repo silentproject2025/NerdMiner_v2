@@ -24,10 +24,10 @@
 #include <math.h>
 #include <string.h>
 
-//#pragma GCC optimize ("Ofast")
-//#pragma GCC optimize ("jump-tables")
-//#pragma GCC optimize ("tree-switch-conversion")
-//#pragma GCC optimize ("no-stack-check")
+#pragma GCC optimize ("Ofast")
+#pragma GCC optimize ("jump-tables")
+#pragma GCC optimize ("tree-switch-conversion")
+#pragma GCC optimize ("no-stack-check")
 
 #define ROTR(x, n) ((x >> n) | (x << ((sizeof(x) << 3) - n)))
 
