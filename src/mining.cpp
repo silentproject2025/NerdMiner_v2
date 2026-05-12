@@ -836,28 +836,28 @@ void minerWorkerHw(void * task_id)
 
       uint32_t *data_words_sha = (uint32_t *)sha_buffer;
       uint32_t *reg_addr_buf_sha = (uint32_t *)(SHA_TEXT_BASE);
-      REG_WRITE(&reg_addr_buf_sha[0], data_words_sha[0]);
-      REG_WRITE(&reg_addr_buf_sha[1], data_words_sha[1]);
-      REG_WRITE(&reg_addr_buf_sha[2], data_words_sha[2]);
-      REG_WRITE(&reg_addr_buf_sha[4], 0x00000080);
-      REG_WRITE(&reg_addr_buf_sha[5], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[6], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[7], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[8], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[9], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[10], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[11], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[12], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[13], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[14], 0x00000000);
-      REG_WRITE(&reg_addr_buf_sha[15], 0x80020000);
+
       for (uint32_t n = job->nonce_start; n < nend; ++n)
       {
         //nerd_sha_hal_wait_idle();
         nerd_sha_ll_write_digest(digest_mid);
         //nerd_sha_hal_wait_idle();
+        REG_WRITE(&reg_addr_buf_sha[0], data_words_sha[0]);
+        REG_WRITE(&reg_addr_buf_sha[1], data_words_sha[1]);
+        REG_WRITE(&reg_addr_buf_sha[2], data_words_sha[2]);
         REG_WRITE(&reg_addr_buf_sha[3], n);
-        //sha_ll_continue_block(SHA2_256);
+        REG_WRITE(&reg_addr_buf_sha[4], 0x00000080);
+        REG_WRITE(&reg_addr_buf_sha[5], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[6], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[7], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[8], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[9], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[10], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[11], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[12], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[13], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[14], 0x00000000);
+        REG_WRITE(&reg_addr_buf_sha[15], 0x80020000);
         REG_WRITE(SHA_CONTINUE_REG, 1);
         
         sha_ll_load(SHA2_256);
