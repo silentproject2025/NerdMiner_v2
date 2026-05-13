@@ -20,6 +20,8 @@ TFT_eSPI tft = TFT_eSPI();                  // Invoke library, pins defined in p
 TFT_eSprite background = TFT_eSprite(&tft); // Invoke library sprite
 
 extern monitor_data mMonitor;
+extern pool_data pData;
+extern unsigned long mPoolUpdate;
 bool hasChangedScreen = true;
 
 void sanzxcam_Init(void)
@@ -65,15 +67,37 @@ void sanzxcam_AlternateRotation(void)
   tft.setRotation( flipRotation(tft.getRotation()) );
 }
 
-void printBottomData(void) {
+void printPoolData() {
+    if (hasChangedScreen || (mPoolUpdate == 0) || (millis() - mPoolUpdate > 60000)) {
+        pData = getPoolData();
+        mPoolUpdate = millis();
+    }
     tft.pushImage(0, 170, bottomWidth, bottomHeight, bottonPoolScreen);
+
+    TFT_eSprite poolSprite = TFT_eSprite(&tft);
+    poolSprite.createSprite(320, 50);
+    poolSprite.setSwapBytes(true);
+    poolSprite.pushImage(0, -20, 320, 70, bottonPoolScreen);
+
+    render.setDrawer(poolSprite);
+    render.setFontSize(24);
+    render.cdrawString(String(pData.workersCount).c_str(), 157, 16, TFT_BLACK);
+    render.setFontSize(18);
+    render.setAlignment(Align::BottomRight);
+    render.cdrawString(pData.workersHash.c_str(), 265, 14, TFT_BLACK);
+    render.setAlignment(Align::BottomLeft);
+    render.cdrawString(pData.bestDifficulty.c_str(), 54, 14, TFT_BLACK);
+
+    poolSprite.pushSprite(0, 190);
+    poolSprite.deleteSprite();
+    render.setDrawer(background);
 }
 
 void sanzxcam_MinerScreen(unsigned long mElapsed)
 {
   mining_data data = getMiningData(mElapsed);
 
-  if (hasChangedScreen) printBottomData();
+  if (hasChangedScreen) printPoolData();
   hasChangedScreen = false;
 
   // Print background screen
@@ -126,7 +150,7 @@ void sanzxcam_ClockScreen(unsigned long mElapsed)
 {
   clock_data data = getClockData(mElapsed);
 
-  if (hasChangedScreen) printBottomData();
+  if (hasChangedScreen) printPoolData();
   hasChangedScreen = false;
 
   // Print background screen
@@ -167,7 +191,7 @@ void sanzxcam_GlobalHashScreen(unsigned long mElapsed)
 {
   coin_data data = getCoinData(mElapsed);
 
-  if (hasChangedScreen) printBottomData();
+  if (hasChangedScreen) printPoolData();
   hasChangedScreen = false;
 
   // Print background screen
@@ -230,7 +254,7 @@ void sanzxcam_BTCprice(unsigned long mElapsed)
 {
   clock_data data = getClockData(mElapsed);
 
-  if (hasChangedScreen) printBottomData();
+  if (hasChangedScreen) printPoolData();
   hasChangedScreen = false;
 
   // Print background screen
